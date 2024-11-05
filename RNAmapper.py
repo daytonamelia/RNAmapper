@@ -5,10 +5,10 @@ import argparse
 import re
 
 # Global Variables
-COVERAGE = 25
-ZYGOSITY = 25
-WINDOW_NEIGHBORS = 50
-LINKAGE_THRESHOLD = 0.98
+COVERAGE = 10 # default = 25
+ZYGOSITY = 20 # default = 20 or 25
+WINDOW_NEIGHBORS = 50 # default = 50
+LINKAGE_THRESHOLD = 0.98 # default = 0.98
 
 def get_args():
     parser = argparse.ArgumentParser(description="")
@@ -69,6 +69,10 @@ def vcf_infoparser(vcfline: dict) -> dict:
     vcfline.pop()
     for ele in infoinfo:
         vcfline.append(ele)
+    if indel:
+        vcfline.append(True)
+    else:
+        vcfline.append(False)
     return vcfline
 
 def vcf_altcleaner(vcfline: dict) -> dict:
@@ -105,4 +109,24 @@ with open(args.wtfile, "r") as wtfile:
 snps_mut = {}
 #TODO
 
+# snps_allele dictionary value has the following layout:
+# pos, ref, alt, dp, fREF, rREF, fALT, rALT, REFtotal, ALTtotal, REFratio, ALTratio, INDEL status
+
 ## STEP 2: Count allele frequency in wildtype
+# Filter the wt snps list 
+for snp in snps_wt.values():
+    # If the read does not have enough coverage (the DP) then it should not be counted.
+    # However, we do want to output this above! Just in case the causative mutation has very low depth.
+    print('--')
+    print(snp)
+    if snp[3] < COVERAGE:
+        continue
+    # Remove SNPs within 10bp of indels
+    if snp[12]: # indel
+        indelpos = snp[0]
+
+    # TODO: good SNPs will have a high % of heterozygosity in the calls
+    # TODO: apparently calls with 0 ref need to removed
+
+    print(snp)
+    # TODO: sliding average
