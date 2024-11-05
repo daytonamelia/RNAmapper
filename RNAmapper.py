@@ -36,9 +36,10 @@ def vcf_lineparser(vcfline: str) -> list:
     return vcfline_return
 
 def vcf_infoparser(vcfline: dict) -> dict:
-    """Given a list of relevant vcf line information, takes the DP and I16 information from the INFO column and appends it.
+    """Given a list of relevant vcf line information, takes relevant DP and I16 information from the INFO column and appends it.
+    Relevant info includes the reference info, alternate info, total reference, total alternate, reference ratio, and alternate ratio.
     Also marks if the read is an indel."""
-    # Split the INFO column by semicolons
+    # Split the INFO column by semicolons and add relevant info to infoinfo
     splitinfo = re.split(r";", vcfline[3])
     infoinfo = [] # the info from the info
     indel = False
@@ -49,14 +50,21 @@ def vcf_infoparser(vcfline: dict) -> dict:
         # Grab the DP element
         if "DP" in ele:
             dpsplit = re.split(r"DP=", ele)
-            infoinfo.append(dpsplit[1])
+            infoinfo.append(int(dpsplit[1])) # DP
         # Grab the first four numbers in the I16 element
         if "I16" in ele:
             i16split = re.split(r"=|,", ele)
-            infoinfo.append(i16split[1])
-            infoinfo.append(i16split[2])
-            infoinfo.append(i16split[3])
-            infoinfo.append(i16split[4])
+            infoinfo.append(int(i16split[1])) # FREF
+            infoinfo.append(int(i16split[2])) # RREF
+            infoinfo.append(int(i16split[3])) # FALT
+            infoinfo.append(int(i16split[4])) # RALT
+    # Calculate totals and ratios for reference and alternate.
+    infoinfo.append(infoinfo[1] + infoinfo[2]) # total reference
+    infoinfo.append(infoinfo[3] + infoinfo[4]) # total alternate
+    if (infoinfo[5] + infoinfo[6]) != infoinfo[0]: # if the sum of the totals doesnt equal the depth theres a problem!
+        print(f"The read totals of line {vcfline} do not match the depth!")
+    infoinfo.append(infoinfo[5]/(infoinfo[5] + infoinfo[6])) # reference ratio
+    infoinfo.append(infoinfo[6]/(infoinfo[5] + infoinfo[6])) # alternate ratio
     # Delete the INFO column as we no longer need it, and add the elements from infoinfo
     vcfline.pop()
     for ele in infoinfo:
