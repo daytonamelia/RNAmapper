@@ -1,0 +1,1 @@
+['#CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO', 'FORMAT', 'AB', 'Fref', 'Rref', 'Falt', 'Ralt', 'refTot', 'altTot', 'Tot', 'refRat', 'altRat', 'highAllele', 'highAve']
