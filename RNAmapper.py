@@ -7,7 +7,7 @@ import re
 # Global Variables
 COVERAGE = 10 # default = 25
 ZYGOSITY = 20 # default = 20 or 25
-WINDOW_NEIGHBORS = 50 # default = 50
+NEIGHBORS = 3 # default = 50 ; EITHER SIDE OF SNP!
 LINKAGE_THRESHOLD = 0.98 # default = 0.98
 
 def get_args():
@@ -29,7 +29,7 @@ def vcf_lineparser(vcfline: str) -> list:
         if ele != "":
             cleanline.append(ele)
     # Grab POS, REF, ALT, INFO
-    vcfline_return.append(cleanline[1])
+    vcfline_return.append(int(cleanline[1]))
     vcfline_return.append(cleanline[3])
     vcfline_return.append(cleanline[4])
     vcfline_return.append(cleanline[7])
@@ -107,26 +107,145 @@ with open(args.wtfile, "r") as wtfile:
 
 # Next read in mutant file and get all snps into snps_mut
 snps_mut = {}
-#TODO
+with open(args.mutfile, "r") as mutfile:
+    for mutline in mutfile:
+        # Break each line into a list for easy parsing.
+        mutline = mutline.strip()
+        # TODO: CHECK FOR HEADER!
+        mutvcfline = vcf_lineparser(mutline)
+        # If the ALT column is just <*>, it is not of note and we can just continue.
+        if mutvcfline[2] == "<*>":
+            continue
+        # It's a SNP! We need the relevant information (DP, I16) from the INFO column.
+        mutvcfline = vcf_infoparser(mutvcfline)
+        # Clean the <*> out of the ALT column of the SNP file.
+        mutvcfline = vcf_altcleaner(mutvcfline)
+        # SNP is ready to be added to dictionary.
+        snps_mut[mutvcfline[0]] = mutvcfline
 
 # snps_allele dictionary value has the following layout:
 # pos, ref, alt, dp, fREF, rREF, fALT, rALT, REFtotal, ALTtotal, REFratio, ALTratio, INDEL status
 
 ## STEP 2: Count allele frequency in wildtype
-# Filter the wt snps list 
-for snp in snps_wt.values():
+# Filter the wt snps list
+mapsnps_wt = []
+for pos, snp in snps_wt.items():
     # If the read does not have enough coverage (the DP) then it should not be counted.
     # However, we do want to output this above! Just in case the causative mutation has very low depth.
-    print('--')
-    print(snp)
     if snp[3] < COVERAGE:
         continue
-    # Remove SNPs within 10bp of indels
+    # Calls with 0 reference allele need to be removed because the vcf doesnt retain information on these calls.
+    if snp[8] == 0:
+        continue
+    # Collect bps of SNPs within 10bp of indels
+    indels = set()
     if snp[12]: # indel
         indelpos = snp[0]
+        for i in range(indelpos-10, indelpos+10):
+            # If it exists as a snp, is not an indel, and is not the indel in question, collect it for later deletion.
+            if i in snps_wt and i != indelpos and not snps_wt[i][12]:
+                indels.add(i)
+    # Grab high heterozygosity SNPs using the REFratio
+    highzygo = 1 - (ZYGOSITY/100)
+    lowzygo = (ZYGOSITY/100)
+    if snp[10] <= highzygo or snp[10] >= lowzygo:
+        if snp[0] not in indels: # quick filter step to save memory
+            mapsnps_wt.append(snp[0])
+# Filter out the SNPs that were within 10bp of indels.
+for pos in indels:
+    mapsnps_wt.remove(pos)
+    del snps_wt[pos]
 
-    # TODO: good SNPs will have a high % of heterozygosity in the calls
-    # TODO: apparently calls with 0 ref need to removed
+# Filter the mut list
+mapsnps_mut = []
+for pos, snp in snps_mut.items():
+    if snp[3] < COVERAGE:
+        continue
+    if snp[8] == 0:
+        continue
+    indels = set()
+    if snp[12]: # indel
+        indelpos = snp[0]
+        for i in range(indelpos-10, indelpos+10):
+            if i in snps_mut and i != indelpos and not snps_mut[i][12]:
+                indels.add(i)
+    highzygo = 1 - (ZYGOSITY/100)
+    lowzygo = (ZYGOSITY/100)
+    if snp[10] <= highzygo or snp[10] >= lowzygo:
+        if snp[0] not in indels: # quick filter step to save memory
+            mapsnps_mut.append(snp[0])
+for pos in indels:
+    mapsnps_mut.remove(pos)
+    del snps_mut[pos]
 
-    print(snp)
-    # TODO: sliding average
+# Take sliding average of highest allele called at any position in wt and append it to the SNP call
+wtsnpslen = len(mapsnps_wt)
+# If the list is lower than the number of neighbors, tell user and just adjust the neighbors to be the length of the list.
+if wtsnpslen < NEIGHBORS:
+    print(f"Less than {NEIGHBORS} SNPs in wildtype so sliding window neighbors has been adjusted to {wtsnpslen - 1}!")
+    NEIGHBORS = wtsnpslen - 1
+# Finally calculate the sliding window:
+for i, snppos in enumerate(mapsnps_wt):
+    cumsum = 0
+    # Before NEIGHBOR does just to the right:
+    if i < NEIGHBORS:
+        for j in range(i + NEIGHBORS - (i-1)):
+            neighbor = mapsnps_wt[j]
+            if snps_wt[neighbor][10] > snps_wt[neighbor][11]:
+                cumsum += snps_wt[neighbor][10]
+            else:
+                cumsum += snps_wt[neighbor][11]
+        snps_wt[snppos].append((cumsum/(NEIGHBORS+1)))
+    # After NEIGHBOR does just to the left:
+    elif i >= wtsnpslen - NEIGHBORS - 1:
+        window_size = i + NEIGHBORS - (i-1)
+        for j in range(i + NEIGHBORS - (i-1)):
+            neighbor = mapsnps_wt[i-j]
+            if snps_wt[neighbor][10] > snps_wt[neighbor][11]:
+                cumsum += snps_wt[neighbor][10]
+            else:
+                cumsum += snps_wt[neighbor][11]
+        snps_wt[snppos].append(cumsum/(NEIGHBORS+1))
+    # Within NEIGHBOR does both to left and right
+    else:
+        for j in range(i-NEIGHBORS, i+NEIGHBORS+1):
+            neighbor = mapsnps_wt[j]
+            if snps_wt[neighbor][10] > snps_wt[neighbor][11]:
+                cumsum += snps_wt[neighbor][10]
+            else:
+                cumsum += snps_wt[neighbor][11]
+        snps_wt[snppos].append(cumsum/(NEIGHBORS*2+1))
+
+# Take sliding average of highest allele called at any position in mut and append it to the SNP call
+mutsnpslen = len(mapsnps_mut)
+if mutsnpslen < NEIGHBORS:
+    print(f"Less than {NEIGHBORS} SNPs in mutant so sliding window neighbors has been adjusted to {mutsnpslen - 1}!")
+    NEIGHBORS = mutsnpslen - 1
+for i, snppos in enumerate(mapsnps_mut):
+    cumsum = 0
+    if i < NEIGHBORS:
+        for j in range(i + NEIGHBORS - (i-1)):
+            neighbor = mapsnps_mut[j]
+            if snps_mut[neighbor][10] > snps_mut[neighbor][11]:
+                cumsum += snps_mut[neighbor][10]
+            else:
+                cumsum += snps_mut[neighbor][11]
+        snps_mut[snppos].append((cumsum/(NEIGHBORS+1)))
+    elif i >= mutsnpslen - NEIGHBORS - 1:
+        window_size = i + NEIGHBORS - (i-1)
+        for j in range(i + NEIGHBORS - (i-1)):
+            neighbor = mapsnps_mut[i-j]
+            if snps_mut[neighbor][10] > snps_mut[neighbor][11]:
+                cumsum += snps_mut[neighbor][10]
+            else:
+                cumsum += snps_mut[neighbor][11]
+        snps_mut[snppos].append(cumsum/(NEIGHBORS+1))
+    else:
+        for j in range(i-NEIGHBORS, i+NEIGHBORS+1):
+            neighbor = mapsnps_mut[j]
+            if snps_mut[neighbor][10] > snps_mut[neighbor][11]:
+                cumsum += snps_mut[neighbor][10]
+            else:
+                cumsum += snps_mut[neighbor][11]
+        snps_mut[snppos].append(cumsum/(NEIGHBORS*2+1))
+
