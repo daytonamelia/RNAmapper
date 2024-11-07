@@ -7,7 +7,7 @@ import re
 # Global Variables
 COVERAGE = 10 # default = 25
 ZYGOSITY = 20 # default = 20 or 25
-NEIGHBORS = 3 # default = 50 ; EITHER SIDE OF SNP!
+NEIGHBORS = 25 # default = 50 ; EITHER SIDE OF SNP!
 LINKAGE_THRESHOLD = 0.98 # default = 0.98
 
 def get_args():
@@ -191,8 +191,6 @@ for pos in indels:
     mapsnps_mut.remove(pos)
     del snps_mut[pos]
 
-print(mapsnps_mut)
-
 # # Take sliding average of highest allele called at any position in wt and append it to the SNP call
 # wtsnpslen = len(mapsnps_wt)
 # # If the list is lower than the number of neighbors, tell user and just adjust the neighbors to be the length of the list.
@@ -228,10 +226,7 @@ if mutsnpslen < NEIGHBORS:
     # print(f"Less than {NEIGHBORS} SNPs in mutant so sliding window neighbors has been adjusted to {mutsnpslen - 1}!")
     NEIGHBORS = mutsnpslen - 1
 for i, snppos in enumerate(mapsnps_mut):
-    print('--')
-    print(i, snppos)
     cumsum = 0
-    print(snps_mut[snppos])
     if i < NEIGHBORS:
         for j in range(i + NEIGHBORS - (i-1)):
             neighbor = mapsnps_mut[j]
@@ -248,14 +243,11 @@ for i, snppos in enumerate(mapsnps_mut):
             neighbor = mapsnps_mut[j]
             cumsum += snps_mut[neighbor][12]
         snps_mut[snppos].append(cumsum/(NEIGHBORS*2+1))
-    print(snps_mut[snppos])
 
-# with open(f"{args.out}_mut_atMarkers.txt", "w") as mutmarkout:
-#     mutmarkout.write(f"#POS\tREF\tALT\tDP\tFREF\tRREF\tFALT\tRALT\tTOTALREF\tTOTALALT\tREFRATIO\tALTRATIO\tINDEL\tSLIDINGAVG\n")
-#     for snppos in mapsnps_mut:
-#         print(snppos)
-#         print(snps_mut[snppos])
-#         for ele in snps_mut[snppos]:
-#             mutmarkout.write(f"{ele}\t")
-#         mutmarkout.write(f"\n")
+with open(f"{args.out}_mut_atMarkers.txt", "w") as mutmarkout:
+    mutmarkout.write(f"#POS\tREF\tALT\tDP\tFREF\tRREF\tFALT\tRALT\tTOTALREF\tTOTALALT\tREFRATIO\tALTRATIO\tINDEL\tSLIDINGAVG\n")
+    for snppos in mapsnps_mut:
+        for ele in snps_mut[snppos]:
+            mutmarkout.write(f"{ele}\t")
+        mutmarkout.write(f"\n")
 
