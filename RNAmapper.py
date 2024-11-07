@@ -4,23 +4,19 @@
 import argparse
 import re
 
-# Global Variables
-COVERAGE = 10 # default = 25
-ZYGOSITY = 20 # default = 20 or 25
-NEIGHBORS = 25 # default = 50 ; EITHER SIDE OF SNP!
-LINKAGE_THRESHOLD = 0.98 # default = 0.98
-
 def get_args():
     parser = argparse.ArgumentParser(description="")
     parser.add_argument("-wt", "--wtfile", help="", type=str, required=True)
     parser.add_argument("-mut", "--mutfile", help="", type=str, required=True)
     parser.add_argument("-o", "--out", help="", type=str, default="data/RNAmapper")
+    parser.add_argument("-c", "--coverage", help="", type=int, default=10) # actual default = 25
+    parser.add_argument("-z", "--zygosity", help="", type=int, default=20)
+    parser.add_argument("-n", "--neighbors", help="", type=int, default=3) # actuald default = 25 ; EITHER SIDE OF SNP!
+    parser.add_argument("-lt", "--linkedthreshold", help="", type=float, default=0.98)
     return parser.parse_args()
 
-def vcf_lineparser(vcfline: str) -> list:
-    """Parses a vcf line and returns the relevant info of each column as a list.
-    Relevant info: REF, ALT, INFO"""
-    # VCF general TSV format: CHROM POS ID  REF ALT QUAL    FILTER  INFO(contains DP and I16)    FORMAT
+def vcf_lineparser(vcfline: str, coverage: int) -> list:
+    """Parses a vcf line and returns the info of each column as a list."""
     vcfline_return = []
     # First split the read into columns for parsing, and clean out empty elements.
     splitline = re.split(r"\s", vcfline)
@@ -28,19 +24,17 @@ def vcf_lineparser(vcfline: str) -> list:
     for ele in splitline:
         if ele != "":
             cleanline.append(ele)
-    # Grab POS, REF, ALT, INFO
-    vcfline_return.append(int(cleanline[1]))
-    vcfline_return.append(cleanline[3])
-    vcfline_return.append(cleanline[4])
-    vcfline_return.append(cleanline[7])
-    return vcfline_return
-
-def vcf_infoparser(vcfline: dict) -> dict:
-    """Given a list of relevant vcf line information, takes relevant DP and I16 information from the INFO column and appends it.
-    Relevant info includes the reference info, alternate info, total reference, total alternate, reference ratio, and alternate ratio.
-    Also marks if the read is an indel."""
-    # Split the INFO column by semicolons and add relevant info to infoinfo
-    splitinfo = re.split(r";", vcfline[3])
+    vcfline_return.append(int(cleanline[0])) # CHROM
+    vcfline_return.append(int(cleanline[1])) # POS
+    vcfline_return.append(cleanline[2]) # ID
+    vcfline_return.append(cleanline[3]) # REF
+    vcfline_return.append(cleanline[4]) # ALT
+    vcfline_return.append(int(cleanline[5])) # QUAL
+    vcfline_return.append(cleanline[6]) # FILTER
+    vcfline_return.append(cleanline[7]) # INFO
+    vcfline_return.append(cleanline[7]) # FORMAT
+    # Now parse the info column for stats
+    splitinfo = re.split(r";", vcfline_return[7])
     infoinfo = [] # the info from the info
     indel = False
     for ele in splitinfo:
@@ -50,7 +44,10 @@ def vcf_infoparser(vcfline: dict) -> dict:
         # Grab the DP element
         if "DP" in ele:
             dpsplit = re.split(r"DP=", ele)
+            if int(dpsplit[1]) < coverage:
+                return 0
             infoinfo.append(int(dpsplit[1])) # DP
+            # If the DP is below coverage toss it, otherwise keep.
         # Grab the first four numbers in the I16 element
         if "I16" in ele:
             i16split = re.split(r"=|,", ele)
@@ -66,188 +63,138 @@ def vcf_infoparser(vcfline: dict) -> dict:
     infoinfo.append(infoinfo[5]/(infoinfo[5] + infoinfo[6])) # reference ratio
     infoinfo.append(infoinfo[6]/(infoinfo[5] + infoinfo[6])) # alternate ratio
     infoinfo.append(infoinfo[7] if infoinfo[7] > infoinfo[8] else infoinfo[8]) # highest of the ratios!
-    # Delete the INFO column as we no longer need it, and add the elements from infoinfo
-    vcfline.pop()
     for ele in infoinfo:
-        vcfline.append(ele)
+        vcfline_return.append(ele)
     if indel:
-        vcfline.append(True)
+        vcfline_return.append(True)
     else:
-        vcfline.append(False)
-    return vcfline
+        vcfline_return.append(False)
+    return vcfline_return
 
-def vcf_altcleaner(vcfline: dict) -> dict:
+def vcf_altcleaner(vcfline: list) -> dict:
     """Given a list of a vcf line, removes ,<*> from the ALT column and keeps just the basepairs."""
     # Split the REF column by ,
-    splitref = re.split(r",<\*>", vcfline[2])
-    vcfline[2] = splitref[0]
+    splitref = re.split(r",<\*>", vcfline[3])
+    vcfline[3] = splitref[0]
     return vcfline
+
+def vcffileparser(file: str, coverage: int) -> (dict, dict):
+    """Given a vcf file, returns a dictionary of all reads with DP > coverage and a dictionary of all SNPs with DP > coverage."""
+    reads = {}
+    snps = {}
+    with open(file, "r") as fh:
+        for line in fh:
+            line = line.strip()
+            # Break line into vcfline
+            vcfline = vcf_lineparser(line, coverage)
+            # If the read was below coverage, it returned 0 and we can toss it
+            if vcfline == 0:
+                continue
+            reads[vcfline[1]] = vcfline
+            # If ALT column is just <*> its not a SNP/indel
+            if vcfline[4] == "<*>":
+                continue
+            vcfline = vcf_altcleaner(vcfline)
+            snps[vcfline[1]] = vcfline
+    return (reads, snps)
+
+def allelefreqcounter(snpdict: dict, zygo: int) -> (set, list):
+    """Given a dictionary of snps, filter for 0 reference allele and find the indels."""
+    mapsnps = []
+    indels = set()
+    for pos, snp in snpdict.items():
+        # Calls with 0 reference allele need to be removed because the vcf doesnt retain information on these calls.
+        if int(snp[14]) == 0:
+            continue
+        # Collect bps of SNPs within 10bp of indels
+        if snp[19]: # indel
+            indelpos = snp[1]
+            for i in range(indelpos-10, indelpos+10):
+                # If it exists as a snp, is not an indel, and is not the indel in question, collect it for later deletion.
+                if i in snpdict and i != indelpos and not snpdict[i][19]:
+                    indels.add(i)
+        # Grab high heterozygosity SNPs using the REFratio
+        highzygo = 1 - (zygo/100)
+        lowzygo = (zygo/100)
+        if snp[16] <= highzygo or snp[17] >= lowzygo:
+            if snp[0] not in indels: # quick filter step to save memory
+                mapsnps.append(snp[1])
+    return indels, mapsnps
+
+def slidingwindowavg(mapsnps: list, reads: dict, neighborn: int) -> dict:
+    snpslen = len(mapsnps)
+    # If the list is lower than the number of neighbors, just adjust the neighbors to be the length of the list.
+    if snpslen < neighborn:
+        nieghborn = snpslen - 1
+    # Finally calculate the sliding window:
+    for i, snppos in enumerate(mapsnps):
+        cumsum = 0
+        # Before NEIGHBOR does just to the right:
+        if i < neighborn:
+            for j in range(i+neighborn-(i-1)):
+                neighbor = snppos+j
+                cumsum += reads[neighbor][18]
+            reads[snppos].append((cumsum/(neighborn+1)))
+        # After NEIGHBOR does just to the left:
+        elif i >= snpslen - neighborn - 1:
+            for j in range(i+neighborn-(i-1)):
+                neighbor = snppos-j
+                cumsum += reads[neighbor][18]
+            reads[snppos].append((cumsum/(neighborn+1)))
+        # Within NEIGHBOR does both to left and right
+        else:
+            for j in range(i-neighborn, i+neighborn+1):
+                neighbor = snppos+j
+                cumsum += reads[neighbor][18]
+            reads[snppos].append((cumsum/(neighborn+1)))
+    return reads
 
 # Read in user-passed arguments
 args = get_args()
 
 ## STEP 1: ID SNPs in .vcf files
+# Read in wt and mut files and get all reads and snps into dictionaries
+reads_wt, snps_wt = vcffileparser(args.wtfile, args.coverage)
+reads_mut, snps_mut = vcffileparser(args.mutfile, args.coverage)
 
-# Read in wildtype file and get all snps into snps_wt
-snps_wt = {}
-with open(args.wtfile, "r") as wtfile:
-    for wtline in wtfile:
-        # Break each line into a list for easy parsing.
-        wtline = wtline.strip()
-        # TODO: CHECK FOR HEADER!
-        wtvcfline = vcf_lineparser(wtline)
-        # If the ALT column is just <*>, it is not of note and we can just continue.
-        if wtvcfline[2] == "<*>":
-            continue
-        # It's a SNP! We need the relevant information (DP, I16) from the INFO column.
-        wtvcfline = vcf_infoparser(wtvcfline)
-        # Clean the <*> out of the ALT column of the SNP file.
-        wtvcfline = vcf_altcleaner(wtvcfline)
-        # SNP is ready to be added to dictionary.
-        snps_wt[wtvcfline[0]] = wtvcfline
-
-# Next read in mutant file and get all snps into snps_mut
-snps_mut = {}
-with open(args.mutfile, "r") as mutfile:
-    for mutline in mutfile:
-        # Break each line into a list for easy parsing.
-        mutline = mutline.strip()
-        # TODO: CHECK FOR HEADER!
-        mutvcfline = vcf_lineparser(mutline)
-        # If the ALT column is just <*>, it is not of note and we can just continue.
-        if mutvcfline[2] == "<*>":
-            continue
-        # It's a SNP! We need the relevant information (DP, I16) from the INFO column.
-        mutvcfline = vcf_infoparser(mutvcfline)
-        # Clean the <*> out of the ALT column of the SNP file.
-        mutvcfline = vcf_altcleaner(mutvcfline)
-        # SNP is ready to be added to dictionary.
-        snps_mut[mutvcfline[0]] = mutvcfline
-
-# # Output all SNPs in wt and mut:
-# with open(f"{args.out}_wt_allALT.vcf", "w") as wtallalt:
-#     for snp in snps_wt.values():
-#         for ele in snp:
-#             wtallalt.write(f"{ele}\t")
-#         wtallalt.write(f"\n")
-# with open(f"{args.out}_mut_allALT.vcf", "w") as mutallalt:
-#     for snp in snps_mut.values():
-#         for ele in snp:
-#             mutallalt.write(f"{ele}\t")
-#         mutallalt.write(f"\n")
-
-# snps_allele dictionary value has the following layout:
-# pos, ref, alt, dp, fREF, rREF, fALT, rALT, REFtotal, ALTtotal, REFratio, ALTratio, INDEL status
+# Output all SNPs in wt and mut:
+with open(f"{args.out}_wt_allALT.vcf", "w") as wtallalt:
+    for snp in snps_wt.values():
+        for ele in snp:
+            wtallalt.write(f"{ele}\t")
+        wtallalt.write(f"\n")
+with open(f"{args.out}_mut_allALT.vcf", "w") as mutallalt:
+    for snp in snps_mut.values():
+        for ele in snp:
+            mutallalt.write(f"{ele}\t")
+        mutallalt.write(f"\n")
 
 ## STEP 2: Count allele frequency in wildtype
-# Filter the wt snps list
-mapsnps_wt = []
-indels = set()
-for pos, snp in snps_wt.items():
-    # If the read does not have enough coverage (the DP) then it should not be counted.
-    # However, we do want to output this above! Just in case the causative mutation has very low depth.
-    if int(snp[3]) < COVERAGE:
-        continue
-    # Calls with 0 reference allele need to be removed because the vcf doesnt retain information on these calls.
-    if int(snp[8]) == 0:
-        continue
-    # Collect bps of SNPs within 10bp of indels
-    if snp[12]: # indel
-        indelpos = snp[0]
-        for i in range(indelpos-10, indelpos+10):
-            # If it exists as a snp, is not an indel, and is not the indel in question, collect it for later deletion.
-            if i in snps_wt and i != indelpos and not snps_wt[i][12]:
-                indels.add(i)
-    # Grab high heterozygosity SNPs using the REFratio
-    highzygo = 1 - (ZYGOSITY/100)
-    lowzygo = (ZYGOSITY/100)
-    if snp[10] <= highzygo or snp[11] >= lowzygo:
-        if snp[0] not in indels: # quick filter step to save memory
-            mapsnps_wt.append(snp[0])
-# Filter out the SNPs that were within 10bp of indels.
-for pos in indels:
-    mapsnps_wt.remove(pos)
+indels_wt, mapsnps_wt = allelefreqcounter(snps_wt, args.zygosity)
+indels_mut, mapsnps_mut = allelefreqcounter(snps_mut, args.zygosity)
+
+# Filter indels
+for pos in indels_wt:
+    if pos in mapsnps_wt:
+        mapsnps_wt.remove(pos)
     del snps_wt[pos]
 
-# Filter the mut list
-mapsnps_mut = []
-indels = set()
-for pos, snp in snps_mut.items():
-    if snp[3] < COVERAGE:
-        continue
-    if snp[8] == 0:
-        continue
-    # If it isnt in the wt mapping snps, dont count it
-    if snp[0] not in mapsnps_wt:
-        continue
-    if snp[12]: # indel
-        indelpos = snp[0]
-        for i in range(indelpos-10, indelpos+10):
-            if i in snps_mut and i != indelpos and not snps_mut[i][12]:
-                indels.add(i)
-    if snp[0] not in indels: # quick filter step to save memory
-        mapsnps_mut.append(snp[0])
-for pos in indels:
-    mapsnps_mut.remove(pos)
+for pos in indels_mut:
+    if pos in mapsnps_mut:
+        mapsnps_mut.remove(pos)
     del snps_mut[pos]
 
-# # Take sliding average of highest allele called at any position in wt and append it to the SNP call
-# wtsnpslen = len(mapsnps_wt)
-# # If the list is lower than the number of neighbors, tell user and just adjust the neighbors to be the length of the list.
-# if wtsnpslen < NEIGHBORS:
-#     # print(f"Less than {NEIGHBORS} SNPs in wildtype so sliding window neighbors has been adjusted to {wtsnpslen - 1}!")
-#     NEIGHBORS = wtsnpslen - 1
-# # Finally calculate the sliding window:
-# for i, snppos in enumerate(mapsnps_wt):
-#     cumsum = 0
-#     # Before NEIGHBOR does just to the right:
-#     if i < NEIGHBORS:
-#         for j in range(i + NEIGHBORS - (i-1)):
-#             neighbor = mapsnps_wt[j]
-#             cumsum += snps_wt[neighbor][13]
-#         snps_wt[snppos].append((cumsum/(NEIGHBORS+1)))
-#     # After NEIGHBOR does just to the left:
-#     elif i >= wtsnpslen - NEIGHBORS - 1:
-#         window_size = i + NEIGHBORS - (i-1)
-#         for j in range(i + NEIGHBORS - (i-1)):
-#             neighbor = mapsnps_wt[j]
-#             cumsum += snps_wt[neighbor][13]
-#         snps_wt[snppos].append(cumsum/(NEIGHBORS+1))
-#     # Within NEIGHBOR does both to left and right
-#     else:
-#         for j in range(i-NEIGHBORS, i+NEIGHBORS+1):
-#             neighbor = mapsnps_wt[j]
-#             cumsum += snps_wt[neighbor][13]
-#         snps_wt[snppos].append(cumsum/(NEIGHBORS*2+1))
-
-# Take sliding average of highest allele called at any position in mut and append it to the SNP call
-mutsnpslen = len(mapsnps_mut)
-if mutsnpslen < NEIGHBORS:
-    # print(f"Less than {NEIGHBORS} SNPs in mutant so sliding window neighbors has been adjusted to {mutsnpslen - 1}!")
-    NEIGHBORS = mutsnpslen - 1
-for i, snppos in enumerate(mapsnps_mut):
-    cumsum = 0
-    if i < NEIGHBORS:
-        for j in range(i + NEIGHBORS - (i-1)):
-            neighbor = mapsnps_mut[j]
-            cumsum += snps_mut[neighbor][12]
-        snps_mut[snppos].append((cumsum/(NEIGHBORS+1)))
-    elif i >= mutsnpslen - NEIGHBORS - 1:
-        window_size = i + NEIGHBORS - (i-1)
-        for j in range(i + NEIGHBORS - (i-1)):
-            neighbor = mapsnps_mut[j]
-            cumsum += snps_mut[neighbor][12]
-        snps_mut[snppos].append(cumsum/(NEIGHBORS+1))
-    else:
-        for j in range(i-NEIGHBORS, i+NEIGHBORS+1):
-            neighbor = mapsnps_mut[j]
-            cumsum += snps_mut[neighbor][12]
-        snps_mut[snppos].append(cumsum/(NEIGHBORS*2+1))
+## STEP 3: Take sliding average of highest allele called at any position in the list of mapped snps and append it to the reads
+# Make sure mutant snps are also present in wt
+for pos in mapsnps_mut:
+    if pos not in mapsnps_wt:
+        mapsnps_mut.remove(pos)
+reads_wt = slidingwindowavg(snps_wt, reads_wt, args.neighbors)
+reads_mut = slidingwindowavg(snps_wt, reads_wt, args.neighbors)
 
 with open(f"{args.out}_mut_atMarkers.txt", "w") as mutmarkout:
     mutmarkout.write(f"#POS\tREF\tALT\tDP\tFREF\tRREF\tFALT\tRALT\tTOTALREF\tTOTALALT\tREFRATIO\tALTRATIO\tINDEL\tSLIDINGAVG\n")
     for snppos in mapsnps_mut:
-        for ele in snps_mut[snppos]:
+        for ele in reads_mut[snppos]:
             mutmarkout.write(f"{ele}\t")
         mutmarkout.write(f"\n")
-
