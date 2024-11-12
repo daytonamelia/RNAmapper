@@ -6,4 +6,4 @@ This project aims to facilitate the ability of geneticists to gain insight into 
 
 ## Relevant Papers:
 
-1. [Miller, A. C., Obholzer, N. D., Shah, A. N., Megason, S. G., & Moens, C. B. (2013). RNA-seq-based mapping and candidate identification of mutations from forward genetic screens. Genome research, 23(4), 679–686. https://doi.org/10.1101/gr.147322.112](https://genome.cshlp.org/content/23/4/679.long)
+    1. [Miller, A. C., Obholzer, N. D., Shah, A. N., Megason, S. G., & Moens, C. B. (2013). RNA-seq-based mapping and candidate identification of mutations from forward genetic screens. Genome research, 23(4), 679–686. https://doi.org/10.1101/gr.147322.112](https://genome.cshlp.org/content/23/4/679.long)
