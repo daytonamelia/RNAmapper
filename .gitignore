@@ -1,3 +1,6 @@
-data/
 slurm_out/
 RNAmapper.sh
+*.Rproj
+.Rhistory
+.Rproj.user
+out.txt

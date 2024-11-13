@@ -101,9 +101,6 @@ def allelefreqcounter(snpdict: dict, zygo: int, coverage: int, wtcheck: bool) ->
         if wtcheck:
             if int(snp[9]) < coverage:
                 continue
-        # Calls with 0 reference allele need to be removed because the vcf doesnt retain information on these calls.
-        if int(snp[14]) == 0:
-            continue
         # Collect bps of SNPs within 10bp of indels
         if snp[19]: # indel
             indelpos = snp[1]
@@ -195,7 +192,7 @@ snps_wt = slidingwindowavg(mapsnps_wt, snps_wt, args.neighbors)
 snps_mut = slidingwindowavg(mapsnps_mut, snps_mut, args.neighbors)
 
 # Write mutant markers to file
-with open(f"{args.out}_mut_atMarkers.txt", "w") as mutmarkout:
+with open(f"{args.out}_mut_atMarkers.vcf", "w") as mutmarkout:
     for snppos in mapsnps_mut:
         # if snps_mut[snppos][20] >= args.linkagethreshold:
         for ele in snps_mut[snppos]:
