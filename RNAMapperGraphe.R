@@ -2,11 +2,10 @@
 # Get current directory, read in arguments
 currentDir <- getwd()
 args <- commandArgs(T)
-linkedRatio = 0.98
-mutMarker_path <- "../RNAMapout/RNAmapper_mut_atMarkers.vcf"
-plotOut = "Chr1"
-plotMax = 60000000
-plotBreaks = 10^((floor(log10(plotMax)))+1)
+if (length(args) > 3) stop('Error in RNAMapperGraphe.R: Too many arguments.');
+mutMarker_path <- args[1]
+plotOut <- args[2]
+linkedRatio <- if (length(args) < 3) 0.98 else args[3]
 
 # Load in files
 mutMarker <- read.delim(mutMarker_path, header=F)
@@ -29,8 +28,8 @@ linkSize <- Redge-Ledge
 #Plot!
 jpeg(paste(plotOut,".jpg", sep=""), width=1000, bg="white")
 options(scipen=999)
-plot(mutMarker$POS, mutMarker$AVERAGE, 
-     pch=16, col="red", cex=2, 
+plot(mutMarker$POS, mutMarker$AVERAGE,
+     pch=16, col="red", cex=2,
      ylim=c(0.5,1),
      main = plotOut,
      xlab="Position (bp)",
