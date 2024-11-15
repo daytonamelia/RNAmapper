@@ -198,3 +198,14 @@ with open(f"{args.out}_mut_atMarkers.vcf", "w") as mutmarkout:
         for ele in snps_mut[snppos]:
             mutmarkout.write(f"{ele}\t")
         mutmarkout.write(f"\n")
+
+
+# Write stats file
+# snps_wt, snps_mut, mapsnps_wt, mapsnps_mutall, mapsnps_mut
+with open(f"{args.out}_stats.txt", "w") as statsfile:
+    statsfile.write(f"Total WT SNPs: {len(snps_wt)}\n")
+    statsfile.write(f"Total MUT SNPs: {len(snps_mut)}\n")
+    statsfile.write(f"Total mapping SNPs in WT: {len(mapsnps_wt)}\n")
+    statsfile.write(f"Total mapping SNPs in MUT pre-filtering: {len(mapsnps_mutall)}\n")
+    statsfile.write(f"Total mapping SNPs in MUT post-filtering: {len(mapsnps_mut)}\n")
+    statsfile.write(f"**Filtering for the mapping mutant SNPs finds positions also present in the mapping WT SNPs")
