@@ -12,7 +12,6 @@ def get_args():
     parser.add_argument("-c", "--coverage", help="Minimum coverage for valid linkage threshold read.", type=int, default=10) # actual default = 25
     parser.add_argument("-z", "--zygosity", help="Minimum zygosity for valid linkage threshold read.", type=int, default=20)
     parser.add_argument("-n", "--neighbors", help="Amount of neighbors for sliding window average.", type=int, default=25) # actual default = 25 ; EITHER SIDE OF SNP!
-    parser.add_argument("-lt", "--linkagethreshold", help="Minimum inclusive linkage threshold.", type=float, default=0.98)
     return parser.parse_args()
 
 def vcf_lineparser(vcfline: str) -> list:
@@ -199,7 +198,6 @@ with open(f"{args.out}_mut_atMarkers.vcf", "w") as mutmarkout:
             mutmarkout.write(f"{ele}\t")
         mutmarkout.write(f"\n")
 
-
 # Write stats file
 # snps_wt, snps_mut, mapsnps_wt, mapsnps_mutall, mapsnps_mut
 with open(f"{args.out}_stats.txt", "w") as statsfile:
@@ -209,3 +207,4 @@ with open(f"{args.out}_stats.txt", "w") as statsfile:
     statsfile.write(f"Total mapping SNPs in MUT pre-filtering: {len(mapsnps_mutall)}\n")
     statsfile.write(f"Total mapping SNPs in MUT post-filtering: {len(mapsnps_mut)}\n")
     statsfile.write(f"**Filtering for the mapping mutant SNPs finds positions also present in the mapping WT SNPs")
+    
