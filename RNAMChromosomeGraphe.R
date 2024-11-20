@@ -25,8 +25,11 @@ edges <- paste(Ledge,Redge, sep="--")
 linkSize <- 0
 linkSize <- Redge-Ledge
 
-#Plot!
-jpeg(paste(plotOut,".jpg", sep=""), width=1000, bg="white")
+INDELS <- mutMarker[mutMarker$INDEL == "True",]
+noINDELS <- mutMarker[mutMarker$INDEL == "False",]
+
+#Plot with INDELS!
+jpeg(paste(plotOut,"_indels.jpg", sep=""), width=1000, bg="white")
 options(scipen=999)
 plot(mutMarker$POS, mutMarker$AVERAGE,
      pch=16, col="red", cex=2,
@@ -34,7 +37,24 @@ plot(mutMarker$POS, mutMarker$AVERAGE,
      main = plotOut,
      xlab="Position (bp)",
      ylab="Frequency")
-points(mutMarker$POS, mutMarker$HIGHALLELE, col="black")         # plot raw frequency
+points(mutMarker$POS, mutMarker$HIGHALLELE, col="black", pch=20)        # plot raw frequency
+points(INDELS$POS, INDELS$HIGHALLELE, col="blue", pch=20)      # plot indels
+abline(v = Ledge, col = "blue")                                 # vertical line at Ledge of homozygosity
+abline(v = Redge, col = "blue")                                 #  vertical line at Redge of homozygosity
+abline(h = 1, col = "black", lty = 3)                           # dashed line at freq=1.0, i.e. homozygosity
+mtext(edges, 1, col = "blue")                                   # write position of above lines
+dev.off()
+
+#Plot without INDELS!
+jpeg(paste(plotOut,".jpg", sep=""), width=1000, bg="white")
+options(scipen=999)
+plot(noINDELS$POS, noINDELS$AVERAGE,
+     pch=16, col="red", cex=2,
+     ylim=c(0.5,1),
+     main = plotOut,
+     xlab="Position (bp)",
+     ylab="Frequency")
+points(noINDELS$POS, noINDELS$HIGHALLELE, col="black", pch=20)        # plot raw frequency
 abline(v = Ledge, col = "blue")                                 # vertical line at Ledge of homozygosity
 abline(v = Redge, col = "blue")                                 #  vertical line at Redge of homozygosity
 abline(h = 1, col = "black", lty = 3)                           # dashed line at freq=1.0, i.e. homozygosity
