@@ -9,9 +9,11 @@ def get_args():
     parser.add_argument("-wt", "--wtfile", help="Wildtype file to parse.", type=str, required=True)
     parser.add_argument("-mut", "--mutfile", help="Mutant file to parse.", type=str, required=True)
     parser.add_argument("-o", "--out", help="Output files prefix.", type=str, default="../RNAMapout/RNAmapper")
-    parser.add_argument("-c", "--coverage", help="Minimum coverage for valid linkage threshold read.", type=int, default=10) # actual default = 25
+    parser.add_argument("-ch", "--chromosome", help="Chromosome number for output.", type=str, default="")
+    parser.add_argument("-c", "--coverage", help="Minimum coverage for valid linkage threshold read.", type=int, default=25)
     parser.add_argument("-z", "--zygosity", help="Minimum zygosity for valid linkage threshold read.", type=int, default=20)
-    parser.add_argument("-n", "--neighbors", help="Amount of neighbors for sliding window average.", type=int, default=25) # actual default = 25 ; EITHER SIDE OF SNP!
+    parser.add_argument("-n", "--neighbors", help="Amount of neighbors for sliding window average on either side of SNP.", type=int, default=25) # EITHER SIDE OF SNP!
+    parser.add_argument("-i", "--removeindels", help="Include indels in mapping.", type=bool, default=False)
     return parser.parse_args()
 
 def vcf_lineparser(vcfline: str) -> list:
@@ -91,7 +93,7 @@ def vcffileparser(file: str) -> (dict):
             snps[vcfline[1]] = vcfline
     return snps
 
-def allelefreqcounter(snpdict: dict, zygo: int, coverage: int, wtcheck: bool) -> (set, list):
+def allelefreqcounter(snpdict: dict, zygo: int, coverage: int, removeindels: bool, wtcheck: bool) -> (set, list):
     """Given a dictionary of snps, filter for 0 reference allele and find the indels."""
     mapsnps = []
     indels = set()
@@ -104,9 +106,12 @@ def allelefreqcounter(snpdict: dict, zygo: int, coverage: int, wtcheck: bool) ->
         if snp[19]: # indel
             indelpos = snp[1]
             for i in range(indelpos-10, indelpos+10):
-                # If it exists as a snp, is not an indel, and is not the indel in question, collect it for later deletion.
-                if i in snpdict and i != indelpos and not snpdict[i][19]:
+                # If it exists as a snp and is not the indel in question, collect it for later deletion.
+                if i in snpdict and not indelpos:
                     indels.add(i)
+                # If the user has asked for all indels to be removed, also add the indel position to the indels return.
+                if removeindels:
+                    indels.add(indelpos)
         # Grab high heterozygosity SNPs using the REFratio
         if wtcheck: # need to check zygosity in wt but not in mutant
             highzygo = 1 - (zygo/100)
@@ -154,22 +159,25 @@ snps_wt = vcffileparser(args.wtfile)
 snps_mut = vcffileparser(args.mutfile)
 
 # Output all SNPs in wt and mut:
-with open(f"{args.out}_wt_allALT.vcf", "w") as wtallalt:
+wtallALT_outname = f"{args.out}_wt_chr{args.chromosome}_allALT.vcf"
+mutallALT_outname = f"{args.out}_mut_chr{args.chromosome}_allALT.vcf"
+
+with open(wtallALT_outname, "w") as wtallalt:
     for snp in snps_wt.values():
         for ele in snp:
             wtallalt.write(f"{ele}\t")
         wtallalt.write(f"\n")
-with open(f"{args.out}_mut_allALT.vcf", "w") as mutallalt:
+with open(mutallALT_outname, "w") as mutallalt:
     for snp in snps_mut.values():
         for ele in snp:
             mutallalt.write(f"{ele}\t")
         mutallalt.write(f"\n")
 
 ## STEP 2: Count allele frequency in wildtype
-indels_wt, mapsnps_wt = allelefreqcounter(snps_wt, args.zygosity, args.coverage, True)
-indels_mut, mapsnps_mutall = allelefreqcounter(snps_mut, args.zygosity, args.coverage, False)
+indels_wt, mapsnps_wt = allelefreqcounter(snps_wt, args.zygosity, args.coverage, args.removeindels, True)
+indels_mut, mapsnps_mutall = allelefreqcounter(snps_mut, args.zygosity, args.coverage, args.removeindels, False)
 
-# Filter indels
+# Filter the 10bp positions around indels (and indels themselves if )
 for pos in indels_wt:
     if pos in mapsnps_wt:
         mapsnps_wt.remove(pos)
@@ -191,16 +199,17 @@ snps_wt = slidingwindowavg(mapsnps_wt, snps_wt, args.neighbors)
 snps_mut = slidingwindowavg(mapsnps_mut, snps_mut, args.neighbors)
 
 # Write mutant markers to file
-with open(f"{args.out}_mut_atMarkers.vcf", "w") as mutmarkout:
+mutmarkers_outname = f"{args.out}_mut_chr{args.chromosome}_atMarkers.vcf"
+with open(mutmarkers_outname, "w") as mutmarkout:
     for snppos in mapsnps_mut:
-        # if snps_mut[snppos][20] >= args.linkagethreshold:
         for ele in snps_mut[snppos]:
             mutmarkout.write(f"{ele}\t")
         mutmarkout.write(f"\n")
 
 # Write stats file
 # snps_wt, snps_mut, mapsnps_wt, mapsnps_mutall, mapsnps_mut
-with open(f"{args.out}_stats.txt", "w") as statsfile:
+stats_outname = f"{args.out}_mut_chr{args.chromosome}_stats.txt"
+with open(stats_outname, "w") as statsfile:
     statsfile.write(f"Total WT SNPs: {len(snps_wt)}\n")
     statsfile.write(f"Total MUT SNPs: {len(snps_mut)}\n")
     statsfile.write(f"Total mapping SNPs in WT: {len(mapsnps_wt)}\n")
