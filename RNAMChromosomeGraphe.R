@@ -9,7 +9,7 @@ linkedRatio <- if (length(args) < 3) 0.98 else args[3]
 
 # Load in files
 mutMarker <- read.delim(mutMarker_path, header=F)
-names(mutMarker) <- c("#CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO", "FORMAT",
+names(mutMarker) <- c("#CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO", "PL", "FORMAT",
                       "DP", "FREF", "FALT", "RREF", "RALT", "TOTALREF", "TOTALALT",
                       "REFRATIO", "ALTRATIO", "HIGHALLELE", "INDEL", "AVERAGE", "REMOVE")
 mutMarker <- subset(mutMarker, select = -REMOVE) # Remove extra column
