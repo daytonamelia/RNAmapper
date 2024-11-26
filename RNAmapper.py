@@ -33,7 +33,7 @@ def vcf_lineparser(vcfline: str) -> list:
     vcfline_return.append(int(cleanline[5])) # QUAL
     vcfline_return.append(cleanline[6]) # FILTER
     vcfline_return.append(cleanline[7]) # INFO
-    vcfline_return.append(cleanline[7]) # FORMAT
+    vcfline_return.append(cleanline[8]) # FORMAT
     # Now parse the info column for stats
     splitinfo = re.split(r";", vcfline_return[7])
     infoinfo = [] # the info from the info
