@@ -45,17 +45,15 @@ def vcf_lineparser(vcfline: str) -> list:
         # If read is an INDEL then change "INDEL" to True
         if "INDEL" in ele:
             indel = True
-        # Grab the DP element
-        if "DP" in ele:
-            dpsplit = re.split(r"DP=", ele)
-            infoinfo.append(int(dpsplit[1])) # DP # [10]
         # Grab the first four numbers in the I16 element
         if "I16" in ele:
             i16split = re.split(r"=|,", ele)
-            infoinfo.append(int(i16split[1])) # FREF # [11]
-            infoinfo.append(int(i16split[2])) # RREF # [12]
-            infoinfo.append(int(i16split[3])) # FALT # [13]
-            infoinfo.append(int(i16split[4])) # RALT # [14]
+            i16total = int(i16split[1]) + int(i16split[2]) + int(i16split[3]) + int(i16split[4])
+            infoinfo.append(i16total)           # TOTAL # [10]
+            infoinfo.append(int(i16split[1]))   # FREF # [11]
+            infoinfo.append(int(i16split[2]))   # RREF # [12]
+            infoinfo.append(int(i16split[3]))   # FALT # [13]
+            infoinfo.append(int(i16split[4]))   # RALT # [14]
     # Calculate totals and ratios for reference and alternate.
     if int(infoinfo[0]) > 0: # if the depth is greater than 0
         infoinfo.append(infoinfo[1] + infoinfo[2]) # total reference # [15]
@@ -105,7 +103,7 @@ def allelefreqcounter(snpdict: dict, zygo: int, coverage: int, removeindels: boo
                     indels.add(indelpos)
         # Check coverage and zygosity for snps only in wt (not in mutant!)
         if wtcheck:
-            # high enough coverage?
+            # high enough coverage (found with the sum of the I16 from info NOT the DP! They differ!)
             if int(snp[10]) < coverage:
                 continue
             # Grab high heterozygosity SNPs using the REFratio
