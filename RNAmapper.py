@@ -48,8 +48,7 @@ def vcf_lineparser(vcfline: str) -> list:
         # Grab the first four numbers in the I16 element
         if "I16" in ele:
             i16split = re.split(r"=|,", ele)
-            i16total = int(i16split[1]) + int(i16split[2]) + int(i16split[3]) + int(i16split[4])
-            infoinfo.append(i16total)           # TOTAL # [10]
+            infoinfo.append(int(i16split[1]) + int(i16split[2]) + int(i16split[3]) + int(i16split[4]))      # TOTAL # [10]
             infoinfo.append(int(i16split[1]))   # FREF # [11]
             infoinfo.append(int(i16split[2]))   # RREF # [12]
             infoinfo.append(int(i16split[3]))   # FALT # [13]
