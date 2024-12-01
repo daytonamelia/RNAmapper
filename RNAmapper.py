@@ -167,7 +167,7 @@ def slidingwindowrms(mapsnps: list, reads: dict, neighborn: int) -> dict:
             for j in range(-1*neighborn+1, neighborn):
                 neighbor = mapsnps[i+j]
                 cumsum += (reads[neighbor][19])**2
-            reads[snppos].append(round(mat.sqrt(cumsum/(2*neighborn-1)), 7))
+            reads[snppos].append(round(math.sqrt(cumsum/(2*neighborn-1)), 7))
     return reads
 
 # Read in user-passed arguments
