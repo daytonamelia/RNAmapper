@@ -182,16 +182,16 @@ snps_mut = vcffileparser(args.mutfile)
 wtallALT_outname = f"{args.out}_wt_chr{args.chromosome}_allALT.vcf"
 mutallALT_outname = f"{args.out}_mut_chr{args.chromosome}_allALT.vcf"
 
-# with open(wtallALT_outname, "w") as wtallalt:
-#     for snp in snps_wt.values():
-#         for ele in snp:
-#             wtallalt.write(f"{ele}\t")
-#         wtallalt.write(f"\n")
-# with open(mutallALT_outname, "w") as mutallalt:
-#     for snp in snps_mut.values():
-#         for ele in snp:
-#             mutallalt.write(f"{ele}\t")
-#         mutallalt.write(f"\n")
+with open(wtallALT_outname, "w") as wtallalt:
+    for snp in snps_wt.values():
+        for ele in snp:
+            wtallalt.write(f"{ele}\t")
+        wtallalt.write(f"\n")
+with open(mutallALT_outname, "w") as mutallalt:
+    for snp in snps_mut.values():
+        for ele in snp:
+            mutallalt.write(f"{ele}\t")
+        mutallalt.write(f"\n")
 
 ## STEP 2: Count allele frequency in wildtype
 indels_wt, mapsnps_wt = allelefreqcounter(snps_wt, args.zygosity, args.coverage, args.removeindels, True)
@@ -203,10 +203,10 @@ for pos in indels_wt:
         mapsnps_wt.remove(pos)
     del snps_wt[pos]
 
-# for pos in indels_mut:
-#     if pos in mapsnps_mutall:
-#         mapsnps_mutall.remove(pos)
-#     del snps_mut[pos]
+for pos in indels_mut:
+    if pos in mapsnps_mutall:
+        mapsnps_mutall.remove(pos)
+    del snps_mut[pos]
 
 # STEP 3: Take sliding average or rms of highest allele called at any position in the list of mapped snps and append it to the reads
 # Make sure mutant snps are also present in wt
