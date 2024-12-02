@@ -95,11 +95,11 @@ def allelefreqcounter(snpdict: dict, zygo: int, coverage: int, removeindels: boo
             indelpos = snp[1]
             for i in range(indelpos-10, indelpos+10):
                 # If it exists as a snp and is not the indel in question, collect it for later deletion.
-                if i in snpdict and not indelpos:
+                if i in snpdict and i is not indelpos:
                     indels.add(i)
                 # If the user has asked for all indels to be removed, also add the indel position to the indels return.
-                if removeindels:
-                    indels.add(indelpos)
+            if removeindels:
+                indels.add(indelpos)
         # Check coverage and zygosity for snps only in wt (not in mutant!)
         if wtcheck:
             # high enough coverage (found with the sum of the I16 from info NOT the DP! They differ!)
@@ -108,7 +108,7 @@ def allelefreqcounter(snpdict: dict, zygo: int, coverage: int, removeindels: boo
             # Grab high heterozygosity SNPs using the REFratio
             highzygo = 1 - (zygo/100)
             lowzygo = (zygo/100)
-            if snp[17] >= highzygo or snp[17] <= lowzygo:
+            if snp[17] > highzygo or snp[17] < lowzygo:
                 continue
         if snp[1] not in indels: # quick filter step to save memory
             mapsnps.append(snp[1])
@@ -182,16 +182,16 @@ snps_mut = vcffileparser(args.mutfile)
 wtallALT_outname = f"{args.out}_wt_chr{args.chromosome}_allALT.vcf"
 mutallALT_outname = f"{args.out}_mut_chr{args.chromosome}_allALT.vcf"
 
-with open(wtallALT_outname, "w") as wtallalt:
-    for snp in snps_wt.values():
-        for ele in snp:
-            wtallalt.write(f"{ele}\t")
-        wtallalt.write(f"\n")
-with open(mutallALT_outname, "w") as mutallalt:
-    for snp in snps_mut.values():
-        for ele in snp:
-            mutallalt.write(f"{ele}\t")
-        mutallalt.write(f"\n")
+# with open(wtallALT_outname, "w") as wtallalt:
+#     for snp in snps_wt.values():
+#         for ele in snp:
+#             wtallalt.write(f"{ele}\t")
+#         wtallalt.write(f"\n")
+# with open(mutallALT_outname, "w") as mutallalt:
+#     for snp in snps_mut.values():
+#         for ele in snp:
+#             mutallalt.write(f"{ele}\t")
+#         mutallalt.write(f"\n")
 
 ## STEP 2: Count allele frequency in wildtype
 indels_wt, mapsnps_wt = allelefreqcounter(snps_wt, args.zygosity, args.coverage, args.removeindels, True)
@@ -203,10 +203,10 @@ for pos in indels_wt:
         mapsnps_wt.remove(pos)
     del snps_wt[pos]
 
-for pos in indels_mut:
-    if pos in mapsnps_mutall:
-        mapsnps_mutall.remove(pos)
-    del snps_mut[pos]
+# for pos in indels_mut:
+#     if pos in mapsnps_mutall:
+#         mapsnps_mutall.remove(pos)
+#     del snps_mut[pos]
 
 # STEP 3: Take sliding average or rms of highest allele called at any position in the list of mapped snps and append it to the reads
 # Make sure mutant snps are also present in wt
