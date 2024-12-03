@@ -215,11 +215,11 @@ for pos in mapsnps_mutall:
     if pos in mapsnps_wt:
         mapsnps_mut.append(pos)
 
-# Take the root mean square
+# Take the root mean square if specified
 if args.rootmeansquare:
     snps_wt = slidingwindowrms(mapsnps_wt, snps_wt, args.neighbors)
     snps_mut = slidingwindowrms(mapsnps_mut, snps_mut, args.neighbors)
-# Else take the average
+# Else take the average (default)
 else:
     snps_wt = slidingwindowavg(mapsnps_wt, snps_wt, args.neighbors)
     snps_mut = slidingwindowavg(mapsnps_mut, snps_mut, args.neighbors)
