@@ -1,11 +1,21 @@
+### RNAMChromosomeGraphe.R ###
+## This script visualizes linked regions in a single chromosome in conjunction with the RNAmapper.py script.
+## This script requires 3 inputs:
+## argument 1: the atMarkers.vcf file for the chromosome of interest
+## argument 2: the name of the stats file to append linkage regions
+## argument 3: the name for the output plot (will have .jpg automatically appended to end)
+## There is an optional fourth argument to change the linkageRatio (default = 0.98)
+
+
 # Variables
 # Get current directory, read in arguments
 currentDir <- getwd()
 args <- commandArgs(T)
-if (length(args) > 3) stop('Error in RNAMapperGraphe.R: Too many arguments.');
+if (length(args) > 4) stop('Error in RNAMChromosomeGraphe.R: Too many arguments.');
 mutMarker_path <- args[1]
-plotOut <- args[2]
-linkedRatio <- if (length(args) < 3) 0.98 else args[3]
+statsFile <- args[2]
+plotOut <- args[3]
+linkedRatio <- if (length(args) < 4) 0.98 else args[4]
 
 # Load in files
 mutMarker <- read.delim(mutMarker_path, header=F)
@@ -24,6 +34,10 @@ Redge <- as.numeric(as.character(mutLinked[nrow(mutLinked),2]))
 edges <- paste(Ledge,Redge, sep="--")
 linkSize <- 0
 linkSize <- Redge-Ledge
+# append linkage region to stats file
+write(paste("Left linkage edge", Ledge),file=statsFile,append=TRUE)
+write(paste("Right linkage edge", Redge),file=statsFile,append=TRUE)
+write(paste("Linkage size", linkSize),file=statsFile,append=TRUE)
 
 INDELS <- mutMarker[mutMarker$INDEL == "True",]
 noINDELS <- mutMarker[mutMarker$INDEL == "False",]
