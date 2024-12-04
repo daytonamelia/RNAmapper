@@ -14,8 +14,8 @@ def get_args():
     parser.add_argument("-c", "--coverage", help="Minimum coverage for valid linkage threshold read.", type=int, default=25)
     parser.add_argument("-z", "--zygosity", help="Minimum zygosity for valid linkage threshold read.", type=int, default=20)
     parser.add_argument("-n", "--neighbors", help="Amount of neighbors for sliding window average on either side of SNP.", type=int, default=25) # EITHER SIDE OF SNP!
-    parser.add_argument("-i", "--removeindels", help="Include indels in mapping.", type=bool, default=False)
-    parser.add_argument("-rms", "--rootmeansquare", help="Calculate root mean square instead of average for sliding window.", type=bool, default=False)
+    parser.add_argument("-i", "--removeindels", help="Include indels in mapping.", action="store_true")
+    parser.add_argument("-rms", "--rootmeansquare", help="Calculate root mean square instead of average for sliding window.", action="store_true")
     return parser.parse_args()
 
 def vcf_lineparser(vcfline: str) -> list:
