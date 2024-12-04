@@ -15,13 +15,6 @@ mutMarker_prefix <- args[2]
 plotOut <- args[3]
 plotOut <- paste(plotOut, ".jpg", sep="")
 
-# Testing variables DELETE LATER
-currentDir <- getwd()
-mutMarker_dir <- "~/bioinfo/Bi624/FW_Genetics/GenomeTest/"
-mutMarker_prefix <- "Hox40_py"
-plotOut <- "Genometest"
-plotOut <- paste(plotOut, ".jpg", sep="")
-
 # Get list of chromosomes
 setwd(mutMarker_dir)
 chr_list <- system(paste(
