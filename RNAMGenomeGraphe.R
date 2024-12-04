@@ -1,6 +1,6 @@
 ### RNAMGenomeGraphe.R ###
 ## This script visualizes linked regions in a genome in conjunction with the RNAmapper.py script.
-## This script requires 2 inputs:
+## This script requires 3 inputs:
 ## argument 1: the directory for the atMarkers.vcf files for the genome of interest
 ## argument 2: prefix for mutant marker files (should be everything before mut_chr#_atMarkers.vcf)
 ## argument 3: the name for the output plot (will have .jpg automatically appended to end)
