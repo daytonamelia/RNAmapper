@@ -4,6 +4,7 @@
 import argparse
 import re
 import math
+import time
 
 def get_args():
     parser = argparse.ArgumentParser(description="Parses a WT and Mutant file, outputs a file of all SNPs in wt and mutant files, and outputs a file of all SNPs meeting linkage threshold.\nSee https://github.com/daytonamelia/RNAmapper for more details.")
@@ -14,7 +15,6 @@ def get_args():
     parser.add_argument("-c", "--coverage", help="Minimum coverage for valid linkage threshold read.", type=int, default=25)
     parser.add_argument("-z", "--zygosity", help="Minimum zygosity for valid linkage threshold read.", type=int, default=20)
     parser.add_argument("-n", "--neighbors", help="Amount of neighbors for sliding window average on either side of SNP.", type=int, default=25) # EITHER SIDE OF SNP!
-    parser.add_argument("-i", "--removeindels", help="Include indels in mapping.", action="store_true")
     parser.add_argument("-rms", "--rootmeansquare", help="Calculate root mean square instead of average for sliding window.", action="store_true")
     return parser.parse_args()
 
@@ -85,21 +85,18 @@ def vcffileparser(file: str) -> (dict):
             snps[vcfline[1]] = vcfline
     return snps
 
-def allelefreqcounter(snpdict: dict, zygo: int, coverage: int, removeindels: bool, wtcheck: bool) -> (set, list):
+def allelefreqcounter(snpdict: dict, zygo: int, coverage: int, wtcheck: bool) -> (set, list):
     """Given a dictionary of snps, filter for 0 reference allele and find the indels."""
     mapsnps = []
     indels = set()
     for pos, snp in snpdict.items():
         # Collect bps of SNPs within 10bp of indels
         if snp[20]: # indel
-            indelpos = snp[1]
+            indelpos = int(snp[1])
             for i in range(indelpos-10, indelpos+10):
                 # If it exists as a snp and is not the indel in question, collect it for later deletion.
-                if i in snpdict and i is not indelpos:
+                if i in snpdict and i != indelpos:
                     indels.add(i)
-                # If the user has asked for all indels to be removed, also add the indel position to the indels return.
-            if removeindels:
-                indels.add(indelpos)
         # Check coverage and zygosity for snps only in wt (not in mutant!)
         if wtcheck:
             # high enough coverage (found with the sum of the I16 from info NOT the DP! They differ!)
@@ -121,25 +118,25 @@ def slidingwindowavg(mapsnps: list, reads: dict, neighborn: int) -> dict:
         nieghborn = snpslen - 1
     # Finally calculate the sliding window:
     for i, snppos in enumerate(mapsnps):
-        cumsum = 0
+        cumulsum = 0
         # Before NEIGHBOR does just to the right:
         if i < neighborn:
             for j in range(neighborn):
                 neighbor = mapsnps[i+j]
-                cumsum += reads[neighbor][19]
-            reads[snppos].append(round(cumsum/neighborn, 7))
+                cumulsum += reads[neighbor][19]
+            reads[snppos].append(round(cumulsum/neighborn, 7))
         # After NEIGHBOR does just to the left:
         elif i > snpslen - neighborn - 1:
             for j in range(neighborn):
                 neighbor = mapsnps[i-j]
-                cumsum += reads[neighbor][19]
-            reads[snppos].append(round(cumsum/neighborn, 7))
+                cumulsum += reads[neighbor][19]
+            reads[snppos].append(round(cumulsum/neighborn, 7))
         # Within NEIGHBOR does both to left and right
         else:
             for j in range(-1*neighborn+1, neighborn):
                 neighbor = mapsnps[i+j]
-                cumsum += reads[neighbor][19]
-            reads[snppos].append(round(cumsum/(2*neighborn-1), 7))
+                cumulsum += reads[neighbor][19]
+            reads[snppos].append(round(cumulsum/(2*neighborn-1), 7))
     return reads
 
 def slidingwindowrms(mapsnps: list, reads: dict, neighborn: int) -> dict:
@@ -149,25 +146,25 @@ def slidingwindowrms(mapsnps: list, reads: dict, neighborn: int) -> dict:
         nieghborn = snpslen - 1
     # Finally calculate the sliding window:
     for i, snppos in enumerate(mapsnps):
-        cumsum = 0
+        cumulsum = 0
         # Before NEIGHBOR does just to the right:
         if i < neighborn:
             for j in range(neighborn):
                 neighbor = mapsnps[i+j]
-                cumsum += (reads[neighbor][19])**2
-            reads[snppos].append(round(math.sqrt(cumsum/neighborn), 7))
+                cumulsum += (reads[neighbor][19])**2
+            reads[snppos].append(round(math.sqrt(cumulsum/neighborn), 7))
         # After NEIGHBOR does just to the left:
         elif i > snpslen - neighborn - 1:
             for j in range(neighborn):
                 neighbor = mapsnps[i-j]
-                cumsum += (reads[neighbor][19])**2
-            reads[snppos].append(round(math.sqrt(cumsum/neighborn), 7))
+                cumulsum += (reads[neighbor][19])**2
+            reads[snppos].append(round(math.sqrt(cumulsum/neighborn), 7))
         # Within NEIGHBOR does both to left and right
         else:
             for j in range(-1*neighborn+1, neighborn):
                 neighbor = mapsnps[i+j]
-                cumsum += (reads[neighbor][19])**2
-            reads[snppos].append(round(math.sqrt(cumsum/(2*neighborn-1)), 7))
+                cumulsum += (reads[neighbor][19])**2
+            reads[snppos].append(round(math.sqrt(cumulsum/(2*neighborn-1)), 7))
     return reads
 
 # Read in user-passed arguments
@@ -194,8 +191,8 @@ with open(mutallALT_outname, "w") as mutallalt:
         mutallalt.write(f"\n")
 
 ## STEP 2: Count allele frequency in wildtype
-indels_wt, mapsnps_wt = allelefreqcounter(snps_wt, args.zygosity, args.coverage, args.removeindels, True)
-indels_mut, mapsnps_mutall = allelefreqcounter(snps_mut, args.zygosity, args.coverage, args.removeindels, False)
+indels_wt, mapsnps_wt = allelefreqcounter(snps_wt, args.zygosity, args.coverage, True)
+indels_mut, mapsnps_mutall = allelefreqcounter(snps_mut, args.zygosity, args.coverage, False)
 
 # Filter the 10bp positions around indels (and indels themselves if passed)
 for pos in indels_wt:

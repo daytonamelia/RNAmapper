@@ -41,6 +41,7 @@ write(paste("Linkage size", linkSize),file=statsFile,append=TRUE)
 
 INDELS <- mutMarker[mutMarker$INDEL == "True",]
 noINDELS <- mutMarker[mutMarker$INDEL == "False",]
+plotName <- tail(strsplit(plotOut, "/")[[1]], n=1)
 
 #Plot with INDELS!
 jpeg(paste(plotOut,"_indels.jpg", sep=""), width=1000, bg="white")
@@ -48,7 +49,7 @@ options(scipen=999)
 plot(x=mutMarker$POS, y=mutMarker$AVERAGE,
      pch=16, col="red", cex=2,
      ylim=c(0.5,1),
-     main = plotOut,
+     main = plotName,
      xlab="Position (bp)",
      ylab="Frequency")
 points(x=mutMarker$POS, y=mutMarker$HIGHALLELE, col="black", pch=20)        # plot raw frequency
@@ -65,7 +66,7 @@ options(scipen=999)
 plot(x=noINDELS$POS, y=noINDELS$AVERAGE,
      pch=16, col="red", cex=2,
      ylim=c(0.5,1),
-     main = plotOut,
+     main = plotName,
      xlab="Position (bp)",
      ylab="Frequency")
 points(x=noINDELS$POS, y=noINDELS$HIGHALLELE, col="black", pch=20)        # plot raw frequency
