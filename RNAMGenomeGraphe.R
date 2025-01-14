@@ -11,8 +11,8 @@ currentDir <- getwd()
 args <- commandArgs(T)
 if (length(args) > 4) stop('Error in RNAMGenomeGraphe.R: Too many arguments.');
 mutMarker_dir <- args[1] # directory to look for mutant marker files
-mutMarker_prefix <- args[2] # everything - including path - before _mut_chr
-plotOut <- args[3] # Path to plot with plot name as file name (include .jpg)
+mutMarker_prefix <- args[2] # everything in filename - including path - before _mut_chr
+plotOut <- args[3] # Path to plot with plot name as file name (dont include .jpg)
 plotName <- head(strsplit(tail(strsplit(plotOut, "/")[[1]], n=1), ".jpg")[[1]], n=1)[[1]]
 writePlot <- if (length(args) < 4) FALSE else TRUE # should you include extra plot info: title, some tick labels, and axis labels
 
@@ -41,7 +41,7 @@ for(chr in chr_list){
 }
 
 # Put all the mutant zygosity data together into one big graph laid out by chromosome
-jpeg(plotOut, width=2500, bg="white")   # setup graph environment
+jpeg(paste(plotOut, ".jpg", sep=""), width=2500, bg="white")   # setup graph environment
 # put all graphs into one graphspace
 par(mfrow=c(1,length(chr_list)),  # row of graphspace: 1 column, length of chr_list row
     mar=c(5,0.5,6,0.5), # margins of individual plots: c(bottom, left, top, right)
