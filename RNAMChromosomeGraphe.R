@@ -14,7 +14,7 @@ args <- commandArgs(T)
 if (length(args) > 4) stop('Error in RNAMChromosomeGraphe.R: Too many arguments.');
 mutMarker_path <- args[1]
 statsFile <- args[2]
-plotOut <- args[3]
+plotOut <- args[3] # Don't include .jpg
 linkedRatio <- if (length(args) < 4) 0.98 else args[4]
 
 # Load in files
@@ -47,31 +47,43 @@ plotName <- tail(strsplit(plotOut, "/")[[1]], n=1)
 jpeg(paste(plotOut,"_indels.jpg", sep=""), width=1000, bg="white")
 options(scipen=999)
 plot(x=mutMarker$POS, y=mutMarker$AVERAGE,
-     pch=16, col="red", cex=2,
+     pch=16, 
+     col="red", 
+     cex=4,
+     cex.main=2,
+     cex.axis=1.1,
      ylim=c(0.5,1),
-     main = plotName,
-     xlab="Position (bp)",
-     ylab="Frequency")
+     xlab="",
+     ylab="",
+     las=1,
+     main = paste(plotName, "Marker Frequency Across Chromosome", sep=" "))
+title(xlab="Position (bp)", ylab="Marker Frequency", cex.lab=1.5, line=2.5)
 points(x=mutMarker$POS, y=mutMarker$HIGHALLELE, col="black", pch=20)        # plot raw frequency
 points(x=INDELS$POS, y=INDELS$HIGHALLELE, col="blue", pch=20, type="b", lwd=2)      # plot indels
-abline(v = Ledge, col = "blue")                                 # vertical line at Ledge of homozygosity
-abline(v = Redge, col = "blue")                                 #  vertical line at Redge of homozygosity
-abline(h = 1, col = "black", lty = 3)                           # dashed line at freq=1.0, i.e. homozygosity
-mtext(edges, 1, col = "blue")                                   # write position of above lines
+abline(v = Ledge, col = "blue", lwd=2.5)                                 # vertical line at Ledge of homozygosity
+abline(v = Redge, col = "blue", lwd=2.5)                                 #  vertical line at Redge of homozygosity
+abline(h = 1, col = "black", lty = 3, lwd=2)                           # dashed line at freq=1.0, i.e. homozygosity
+mtext(edges, 1, col = "blue", cex=1.2, font=2)              # write position of above lines
 dev.off()
 
 #Plot without INDELS!
 jpeg(paste(plotOut,".jpg", sep=""), width=1000, bg="white")
 options(scipen=999)
 plot(x=noINDELS$POS, y=noINDELS$AVERAGE,
-     pch=16, col="red", cex=2,
+     pch=16, 
+     col="red", 
+     cex=4,
+     cex.main=2,
+     cex.axis=1.1,
      ylim=c(0.5,1),
-     main = plotName,
-     xlab="Position (bp)",
-     ylab="Frequency")
+     xlab="",
+     ylab="",
+     las=1,
+     main = paste(plotName, "Marker Frequency Across Chromosome", sep=" "))
+title(xlab="Position (bp)", ylab="Marker Frequency", cex.lab=1.5, line=2.5)
 points(x=noINDELS$POS, y=noINDELS$HIGHALLELE, col="black", pch=20)        # plot raw frequency
-abline(v = Ledge, col = "blue")                                 # vertical line at Ledge of homozygosity
-abline(v = Redge, col = "blue")                                 #  vertical line at Redge of homozygosity
-abline(h = 1, col = "black", lty = 3)                           # dashed line at freq=1.0, i.e. homozygosity
-mtext(edges, 1, col = "blue")                                   # write position of above lines
+abline(v = Ledge, col = "blue", lwd=2.5)                                 # vertical line at Ledge of homozygosity
+abline(v = Redge, col = "blue", lwd=2.5)                                 #  vertical line at Redge of homozygosity
+abline(h = 1, col = "black", lty = 3, lwd=2)                           # dashed line at freq=1.0, i.e. homozygosity
+mtext(edges, 1, col = "blue", cex=1.2, font=2)              # write position of above lines
 dev.off()
