@@ -3,7 +3,7 @@
 ## This script requires 3 inputs:
 ## argument 1: the directory for the atMarkers.vcf files for the genome of interest
 ## argument 2: prefix for mutant marker files (should be everything before mut_chr#_atMarkers.vcf)
-## argument 3: the name for the output plot (will have .jpg automatically appended to end)
+## argument 3: the path and name for the output plot (will have .jpg automatically appended to end)
 
 # Variables
 # Get current directory, read in arguments

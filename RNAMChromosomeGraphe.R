@@ -1,9 +1,9 @@
 ### RNAMChromosomeGraphe.R ###
 ## This script visualizes linked regions in a single chromosome in conjunction with the RNAmapper.py script.
 ## This script requires 3 inputs:
-## argument 1: the atMarkers.vcf file for the chromosome of interest
-## argument 2: the name of the stats file to append linkage regions
-## argument 3: the name for the output plot (will have .jpg automatically appended to end)
+## argument 1: the path to the atMarkers.vcf file for the chromosome of interest
+## argument 2: the path of the stats file to append linkage regions
+## argument 3: the path to the output plot (will have chromosome number and .jpg automatically appended to end)
 ## There is an optional fourth argument to change the linkageRatio (default = 0.98)
 
 
