@@ -1,0 +1,3 @@
+Left linkage edge 22562386
+Right linkage edge 31722811
+Linkage size 9160425

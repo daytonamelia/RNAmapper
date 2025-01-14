@@ -83,8 +83,8 @@ plot(x=noINDELS$POS, y=noINDELS$AVERAGE,
      main = paste(plotName, "Marker Frequency Across Chromosome",chrName, sep=" "))
 title(xlab="Position (bp)", ylab="Marker Frequency", cex.lab=1.5, line=2.5)
 points(x=noINDELS$POS, y=noINDELS$HIGHALLELE, col="black", pch=20)        # plot raw frequency
-abline(v = Ledge, col = "blue", lwd=2.5)                                 # vertical line at Ledge of homozygosity
-abline(v = Redge, col = "blue", lwd=2.5)                                 #  vertical line at Redge of homozygosity
+abline(v = Ledge, col = "blue", lwd=3)                                 # vertical line at Ledge of homozygosity
+abline(v = Redge, col = "blue", lwd=3)                                 #  vertical line at Redge of homozygosity
 abline(h = 1, col = "black", lty = 3, lwd=2)                           # dashed line at freq=1.0, i.e. homozygosity
 mtext(edges, 1, col = "blue", cex=1.2, font=2)              # write position of above lines
 dev.off()
