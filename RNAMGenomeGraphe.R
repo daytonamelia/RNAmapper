@@ -12,9 +12,8 @@ args <- commandArgs(T)
 if (length(args) > 4) stop('Error in RNAMGenomeGraphe.R: Too many arguments.');
 mutMarker_dir <- args[1] # directory to look for mutant marker files
 mutMarker_prefix <- args[2] # everything - including path - before _mut_chr
-plotOut <- args[3] # where to put output plot/marker names
-plotOut <- paste(plotOut, ".jpg", sep="") # name of plot FILE
-plotName <- tail(strsplit(tail(strsplit(plotOut, "/")[[1]], n=1), ".jpg")[[1]], n=1) # name written on plot
+plotOut <- args[3] # Path to plot with plot name as file name (include .jpg)
+plotName <- head(strsplit(tail(strsplit(plotOut, "/")[[1]], n=1), ".jpg")[[1]], n=1)[[1]]
 writePlot <- if (length(args) < 4) FALSE else TRUE # should you include extra plot info: title, some tick labels, and axis labels
 
 # Get list of chromosomes

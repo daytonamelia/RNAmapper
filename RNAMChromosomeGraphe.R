@@ -14,7 +14,7 @@ args <- commandArgs(T)
 if (length(args) > 4) stop('Error in RNAMChromosomeGraphe.R: Too many arguments.');
 mutMarker_path <- args[1]
 statsFile <- args[2]
-plotOut <- args[3] # Don't include .jpg
+plotOut <- args[3] # Path to plot with plot prefix name as file name (dont include chr or file extension!)
 linkedRatio <- if (length(args) < 4) 0.98 else args[4]
 
 # Load in files
@@ -41,10 +41,11 @@ write(paste("Linkage size", linkSize),file=statsFile,append=TRUE)
 
 INDELS <- mutMarker[mutMarker$INDEL == "True",]
 noINDELS <- mutMarker[mutMarker$INDEL == "False",]
-plotName <- tail(strsplit(plotOut, "/")[[1]], n=1)
+plotName <- head(strsplit(tail(strsplit(plotOut, "/")[[1]], n=1), ".jpg")[[1]], n=1)[[1]]
+chrName <- tail(strsplit(tail(strsplit(tail(strsplit(mutMarker_path, "/")[[1]], n=1), "_")[[1]], n=2)[[1]], "chr")[[1]], n=1)
 
 #Plot with INDELS!
-jpeg(paste(plotOut,"_indels.jpg", sep=""), width=1000, bg="white")
+jpeg(paste(plotOut, "_chr", chrName, "_indels.jpg", sep=''), width=1000, bg="white")
 options(scipen=999)
 plot(x=mutMarker$POS, y=mutMarker$AVERAGE,
      pch=16, 
@@ -56,7 +57,7 @@ plot(x=mutMarker$POS, y=mutMarker$AVERAGE,
      xlab="",
      ylab="",
      las=1,
-     main = paste(plotName, "Marker Frequency Across Chromosome", sep=" "))
+     main = paste(plotName, "Marker Frequency Across Chromosome",chrName, sep=" "))
 title(xlab="Position (bp)", ylab="Marker Frequency", cex.lab=1.5, line=2.5)
 points(x=mutMarker$POS, y=mutMarker$HIGHALLELE, col="black", pch=20)        # plot raw frequency
 points(x=INDELS$POS, y=INDELS$HIGHALLELE, col="blue", pch=20, type="b", lwd=2)      # plot indels
@@ -67,7 +68,7 @@ mtext(edges, 1, col = "blue", cex=1.2, font=2)              # write position of 
 dev.off()
 
 #Plot without INDELS!
-jpeg(paste(plotOut,".jpg", sep=""), width=1000, bg="white")
+jpeg(paste(plotOut, "_chr", chrName, ".jpg", sep=''), width=1000, bg="white")
 options(scipen=999)
 plot(x=noINDELS$POS, y=noINDELS$AVERAGE,
      pch=16, 
@@ -79,7 +80,7 @@ plot(x=noINDELS$POS, y=noINDELS$AVERAGE,
      xlab="",
      ylab="",
      las=1,
-     main = paste(plotName, "Marker Frequency Across Chromosome", sep=" "))
+     main = paste(plotName, "Marker Frequency Across Chromosome",chrName, sep=" "))
 title(xlab="Position (bp)", ylab="Marker Frequency", cex.lab=1.5, line=2.5)
 points(x=noINDELS$POS, y=noINDELS$HIGHALLELE, col="black", pch=20)        # plot raw frequency
 abline(v = Ledge, col = "blue", lwd=2.5)                                 # vertical line at Ledge of homozygosity
