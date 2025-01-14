@@ -58,6 +58,7 @@ for(chr in chr_list){
        xlim=c(0,max(markerFiles[[chr]][,1])), 
        type="p", 
        xlab=chr)
+abline(h = 1, col = "black", lty = 3, lwd=2)                           # dashed line at freq=1.0, i.e. homozygosity
 }
 # Write extra plot info if asked
 if (writePlot){
