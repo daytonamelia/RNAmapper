@@ -12,8 +12,8 @@ currentDir <- getwd()
 args <- commandArgs(T)
 if (length(args) > 4) stop('Error in RNAMGenomeGraphe.R: Too many arguments.');
 mutMarker_dir <- args[1] # directory to look for mutant marker files
-mutMarker_prefix <- args[2] # everything in filename - including path - before _mut_chr
-plotOut <- args[3] # Path to plot with plot name as file name (dont include .jpg)
+mutMarker_prefix <- args[2] # everything in filename before _mut_chr
+plotOut <- args[3] # Path to plot with plot name as file name (dont include file extension)
 plotName <- head(strsplit(tail(strsplit(plotOut, "/")[[1]], n=1), ".jpg")[[1]], n=1)[[1]]
 writePlot <- if (length(args) < 4) FALSE else TRUE # should you include extra plot info: title, some tick labels, and axis labels
 
@@ -34,7 +34,7 @@ setwd(currentDir)
 markerFiles <- list()
 for(chr in chr_list){
   # get name of file
-  name <- paste(mutMarker_prefix,"_mut_chr",chr,"_atMarkers.vcf",sep="")
+  name <- paste(mutMarker_dir, mutMarker_prefix,"_mut_chr",chr,"_atMarkers.vcf",sep="")
   # save file
   chrfile <- read.delim(name, header=F)
   # save graph to markerFiles
