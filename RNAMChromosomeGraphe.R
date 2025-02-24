@@ -4,7 +4,7 @@
 ## argument 1: the path to the atMarkers.vcf file for the chromosome of interest
 ## argument 2: the path of the stats file to append linkage regions
 ## argument 3: the path to the output plot (will have chromosome number and .jpg automatically appended to end)
-## There is an optional fourth argument to change the linkageRatio (default = 0.98)
+## argument 4: optional change to linkageRatio (default = 0.98)
 
 
 # Variables
