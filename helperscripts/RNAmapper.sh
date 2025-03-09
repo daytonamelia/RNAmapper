@@ -3,7 +3,7 @@
 dir=$1
 prefix=$2
 out=${3-$dir}
-chrs=$(ls $dir | grep -v "/" | grep -E ".*mut.*\\.vcf" | sed -E "s/.*mut_chr(.*)_atMarkers\\.vcf/\\1/" | sort -n -k1)
+chrs=$(ls $dir | grep -v "/" | grep -E ".*mut_chr([0-9]+)\\.vcf" | sed -E "s/.*mut_chr([0-9]+)\\.vcf/\\1/" | sort -n -k1)
 
 echo "RNAmapper.py running on files ${dir}${prefix}..."
 
