@@ -10,7 +10,7 @@ Miller, A. C., Obholzer, N. D., Shah, A. N., Megason, S. G., & Moens, C. B. (201
 
 ## Usage:
 
-#### RNAmapper.py
+#### <ins>RNAmapper.py</ins>
 
 RNAmapper.py requires all of your chromosomes split into their own .vcf file (see previous section) and you can run each chromosome file individually or in parallel.
 
@@ -32,7 +32,7 @@ RNAmapper.py requires all of your chromosomes split into their own .vcf file (se
 
 Once the script is complete, output files will be present in either the specified output directory. These files include a marker file and a stats file for each mutant chromosome.
 
-#### RNAGenomeGraphe.R
+#### <ins>RNAGenomeGraphe.R</ins>
 
 You can use this Rscript to visualize linked regions in a genome.
 
@@ -46,7 +46,7 @@ You can use this Rscript to visualize linked regions in a genome.
 
 -4 : An optional argument to include extra plot info such as a title, axis labels, and improved tick marks. Can be specified with “TRUE.”
 
-#### RNAGenomeGraphe.R
+#### <ins>RNAGenomeGraphe.R</ins>
 
 You can use this Rscript to visualize linked regions in a specific chromosome.
 
