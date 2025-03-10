@@ -22,6 +22,32 @@ RNAmapper.py requires all of your chromosomes split into their own .vcf file (se
 
 -ch : Chromosome number.
 
+-c : Optional argument for coverage cutoff. Default = 20.
+
+-z : Optional argument for zygosity threshold. Default = 25.
+
+-n : Amount of neighbors on either side of SNP for sliding window average calculation. Default = 25.
+
 Once the script is complete, output files will be present in either the specified output directory. These files include a marker file and a stats file for each mutant chromosome.
 
-You can use these files to visualize linked regions in a genome with RNAGenomeGraphe.R and visualize linked regions in a chromosome with RNAChromosomeGraphe.R
+You can use these files to visualize linked regions in a genome with RNAGenomeGraphe.R and visualize linked regions in a chromosome with RNAChromosomeGraphe.R.
+
+`Rscript RNAMGenomeGrapher.R MARKER_DIRECTORY OUTPUT_PREFIX PLOT_DIRECTORY`
+
+-1 : The directory for the marker files for the genome of interest.
+
+-2 : The prefix for the mutant marker files (specified above when creating the files) and consists of everything before “mut_chr#_atMarkers.vcf”
+
+-3 : The path and name for the output plot. This will have .jpg automatically appended to end.
+
+-4 : An optional argument to include extra plot info such as a title, axis labels, and improved tick marks. Can be specified with “TRUE.”
+
+`Rscript RNAMChromosomeGraphe.R`
+
+-1 : The path to the marker file of interest.
+
+-2 : The path to the stats file of which to append the region of linkage.
+
+-3 : The path to the output plot which will have chromosome number and .jpg automatically appended to end.
+
+-4 : Optional argument for linkage ratio in a proportion. Default = 0.98.
