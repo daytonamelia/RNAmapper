@@ -15,7 +15,6 @@ def get_args():
     parser.add_argument("-c", "--coverage", help="Minimum coverage for valid linkage threshold read.", type=int, default=25)
     parser.add_argument("-z", "--zygosity", help="Minimum zygosity for valid linkage threshold read.", type=int, default=20)
     parser.add_argument("-n", "--neighbors", help="Amount of neighbors for sliding window average on either side of SNP.", type=int, default=25) # EITHER SIDE OF SNP!
-    parser.add_argument("-rms", "--rootmeansquare", help="Calculate root mean square instead of average for sliding window.", action="store_true")
     return parser.parse_args()
 
 def vcf_lineparser(vcfline: str) -> list:
@@ -139,34 +138,6 @@ def slidingwindowavg(mapsnps: list, reads: dict, neighborn: int) -> dict:
             reads[snppos].append(round(cumulsum/(2*neighborn-1), 7))
     return reads
 
-def slidingwindowrms(mapsnps: list, reads: dict, neighborn: int) -> dict:
-    snpslen = len(mapsnps)
-    # If the list is lower than the number of neighbors, just adjust the neighbors to be the length of the list.
-    if snpslen < neighborn:
-        nieghborn = snpslen - 1
-    # Finally calculate the sliding window:
-    for i, snppos in enumerate(mapsnps):
-        cumulsum = 0
-        # Before NEIGHBOR does just to the right:
-        if i < neighborn:
-            for j in range(neighborn):
-                neighbor = mapsnps[i+j]
-                cumulsum += (reads[neighbor][19])**2
-            reads[snppos].append(round(math.sqrt(cumulsum/neighborn), 7))
-        # After NEIGHBOR does just to the left:
-        elif i > snpslen - neighborn - 1:
-            for j in range(neighborn):
-                neighbor = mapsnps[i-j]
-                cumulsum += (reads[neighbor][19])**2
-            reads[snppos].append(round(math.sqrt(cumulsum/neighborn), 7))
-        # Within NEIGHBOR does both to left and right
-        else:
-            for j in range(-1*neighborn+1, neighborn):
-                neighbor = mapsnps[i+j]
-                cumulsum += (reads[neighbor][19])**2
-            reads[snppos].append(round(math.sqrt(cumulsum/(2*neighborn-1)), 7))
-    return reads
-
 # Read in user-passed arguments
 args = get_args()
 
@@ -212,14 +183,9 @@ for pos in mapsnps_mutall:
     if pos in mapsnps_wt:
         mapsnps_mut.append(pos)
 
-# Take the root mean square if specified
-if args.rootmeansquare:
-    snps_wt = slidingwindowrms(mapsnps_wt, snps_wt, args.neighbors)
-    snps_mut = slidingwindowrms(mapsnps_mut, snps_mut, args.neighbors)
-# Else take the average (default)
-else:
-    snps_wt = slidingwindowavg(mapsnps_wt, snps_wt, args.neighbors)
-    snps_mut = slidingwindowavg(mapsnps_mut, snps_mut, args.neighbors)
+# Take the average (default)
+snps_wt = slidingwindowavg(mapsnps_wt, snps_wt, args.neighbors)
+snps_mut = slidingwindowavg(mapsnps_mut, snps_mut, args.neighbors)
 
 # Write mutant markers to file
 mutmarkers_outname = f"{args.out}_mut_chr{args.chromosome}_atMarkers.vcf"
