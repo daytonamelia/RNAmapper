@@ -7,3 +7,21 @@ This project aims to facilitate the ability of geneticists to gain insight into 
 ## Relevant Papers:
 
 Miller, A. C., Obholzer, N. D., Shah, A. N., Megason, S. G., & Moens, C. B. (2013). RNA-seq-based mapping and candidate identification of mutations from forward genetic screens. Genome research, 23(4), 679–686. [https://doi.org/10.1101/gr.147322.112](https://genome.cshlp.org/content/23/4/679.long)
+
+## Usage:
+
+RNAmapper.py requires all of your chromosomes split into their own .vcf file (see previous section) and you can run each chromosome file individually or in parallel.
+
+`RNAmapper.py -wt WILDTYPE_FILE -mut MUTANT_FILE -o OUTPUT_DIRECTORY -ch CHROMOSOME_NUMBER`
+
+-wt : .vcf file with SNPs for wildtype.
+
+-mut : .vcf file with SNPs for mutant.
+
+-o : Output directory and output prefix.
+
+-ch : Chromosome number.
+
+Once the script is complete, output files will be present in either the specified output directory. These files include a marker file and a stats file for each mutant chromosome.
+
+You can use these files to visualize linked regions in a genome with RNAGenomeGraphe.R and visualize linked regions in a chromosome with RNAChromosomeGraphe.R
