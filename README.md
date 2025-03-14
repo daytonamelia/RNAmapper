@@ -14,7 +14,7 @@ Miller, A. C., Obholzer, N. D., Shah, A. N., Megason, S. G., & Moens, C. B. (201
 
 RNAmapper.py requires all of your chromosomes split into their own .vcf file (see previous section) and you can run each chromosome file individually or in parallel.
 
-`RNAmapper.py -wt WILDTYPE_FILE -mut MUTANT_FILE -o OUTPUT_DIRECTORY -ch CHROMOSOME_NUMBER`
+`RNAmapper.py -wt <WILDTYPE_FILE> -mut <MUTANT_FILE> -o <OUTPUT_DIRECTORY/> -ch <CHROMOSOME_NUMBER>`
 
 -wt : .vcf file with SNPs for wildtype.
 
@@ -36,7 +36,7 @@ Once the script is complete, output files will be present in either the specifie
 
 You can use this Rscript to visualize linked regions in a genome.
 
-`Rscript RNAMGenomeGrapher.R MARKER_DIRECTORY OUTPUT_PREFIX PLOT_DIRECTORY`
+`Rscript RNAMGenomeGrapher.R <MARKER_DIRECTORY/> <OUTPUT_PREFIX> <PLOT_DIRECTORY/>`
 
 -1 : The directory for the marker files for the genome of interest.
 
@@ -50,7 +50,7 @@ You can use this Rscript to visualize linked regions in a genome.
 
 You can use this Rscript to visualize linked regions in a specific chromosome.
 
-`Rscript RNAMChromosomeGraphe.R`
+`Rscript RNAMChromosomeGraphe.R <MARKER_FILE> <STATS_FILE> <OUTPUT_PLOT>`
 
 -1 : The path to the marker file of interest.
 
