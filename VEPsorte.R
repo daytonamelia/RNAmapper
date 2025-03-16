@@ -47,7 +47,7 @@ both$MainConsequence <- factor(gsub(",.*","",both$Consequence),levels=rev(severi
 both <- both[order(both$MainConsequence, both$Tot.mut, both$refTot.mut,decreasing = T),]
 # both <- both[order(both$MainConsequence),]
 
-both = both[ , c("POS", "Tot.mut", names(both)[!(names(both) %in% c("POS", "Tot.mut"))])]
+both = both[ , c("POS", names(both)[!(names(both) %in% c("POS"))])]
 
 
 
